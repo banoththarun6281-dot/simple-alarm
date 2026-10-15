@@ -1,0 +1,144 @@
+import 'dart:async';
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: AlarmPage(),
+    );
+  }
+}
+
+class AlarmPage extends StatefulWidget {
+  const AlarmPage({super.key});
+
+  @override
+  State<AlarmPage> createState() => _AlarmPageState();
+}
+
+class _AlarmPageState extends State<AlarmPage> {
+  TimeOfDay alarmTime = TimeOfDay.now();
+  Timer? timer;
+  String message = 'No alarm set';
+
+  void setAlarm() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+
+    if (picked != null && mounted) {
+      timer?.cancel();
+
+      setState(() {
+        alarmTime = picked;
+        message = 'Alarm set for ${picked.format(context)}';
+      });
+
+      final now = DateTime.now();
+      var alarm = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        picked.hour,
+        picked.minute,
+      );
+
+      if (!alarm.isAfter(now)) {
+        alarm = alarm.add(const Duration(days: 1));
+      }
+
+      final duration = alarm.difference(now);
+
+      timer = Timer(duration, () {
+        if (mounted) {
+          setState(() {
+            message = '⏰ Wake up! Alarm ringing!';
+          });
+
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('⏰ Alarm'),
+              content: const Text('Wake up! It is time!'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Stop'),
+                ),
+              ],
+            ),
+          );
+        }
+      });
+    }
+  }
+
+  void cancelAlarm() {
+    timer?.cancel();
+    setState(() {
+      message = 'Alarm cancelled';
+    });
+  }
+
+  @override
+  void dispose() {
+    timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Simple Alarm'),
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+      ),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.alarm,
+              size: 100,
+              color: Colors.blue,
+            ),
+            const SizedBox(height: 20),
+            Text(
+              alarmTime.format(context),
+              style: const TextStyle(
+                fontSize: 40,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: setAlarm,
+              child: const Text('Set Alarm'),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: cancelAlarm,
+              child: const Text('Cancel Alarm'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
